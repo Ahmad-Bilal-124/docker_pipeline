@@ -1,40 +1,35 @@
-version: "3.8"
+version: '3.8'
+
 services:
-  mysql:
-    image: mysql:latest
-    container_name: mysql
+  mysql-db:
+    image: mysql:8
+    container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: Test@123
-      MYSQL_DATABASE: expenses_tracker
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: expensesdb
+    ports:
+      - "3306:3306"
     volumes:
-      - ./mysql-data:/var/lib/mysql
-    networks:
-      - appbridge
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD","mysqladmin","ping","-h","localhost","-uroot","-pTest@123"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
-    restart: always
 
-  mainapp:
-    image: snehcreate/expensetracker_v3
-    container_name: Expensetracker
-    environment:
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/expenses_tracker?allowPublicKeyRetrieval=true&useSSL=false"
-      SPRING_DATASOURCE_PASSWORD: Test@123
+  expensesapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mysql-db:
+        condition: service_healthy
     ports:
       - "8080:8080"
-    networks:
-      - appbridge
-    depends_on:
-      - mysql
-    restart: always
-
-networks:
-  appbridge:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/expensesdb?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
 
 volumes:
-  mysql-data:
+  mysql_data:
